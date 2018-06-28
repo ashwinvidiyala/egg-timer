@@ -3,10 +3,15 @@ class EggsController < ApplicationController
 
   def timer
     if valid_slack_token?
-      send_message_to_slack 'Time up!', 'ephemeral', params[:response_url]
+      time = params[:text].to_i
+      minute_or_minutes = time == 1 ? 'minute' : 'minutes'
+
+      SendMessageToSlackJob.set(wait: time.minutes)
+                           .perform_later("#{time} #{minute_or_minutes} up",'ephemeral', params[:response_url])
+
       return render json: {
         response_type: 'ephemeral',
-        text: "Timer has been set for #{params[:text]} minutes"
+        text: "Timer has been set for #{time} #{minute_or_minutes}"
       }, status: 200
     else
       return render json: {}, status: 403

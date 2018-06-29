@@ -1,13 +1,14 @@
 class EggsController < ApplicationController
   skip_before_action :verify_authenticity_token
 
-  def timer
+  def create
     if valid_slack_token?
       time = params[:text].to_i
       minute_or_minutes = time == 1 ? 'minute' : 'minutes'
+      message_expires_at = (Time.now + time.minutes + 30.seconds).iso8601
 
       SendMessageToSlackJob.set(wait: time.minutes)
-                           .perform_later("#{time} #{minute_or_minutes} up",'ephemeral', params[:response_url])
+                           .perform_later("#{time} #{minute_or_minutes} up",'ephemeral', params[:response_url], message_expires_at)
 
       return render json: {
         response_type: 'ephemeral',
